@@ -14,6 +14,8 @@ namespace startrek25_rtools
             }
 
             switch(args[0]) {
+
+            // Pack a directory of files into DATA.001, DATA.DIR, DATA.RUN.
             case "--packfiles": {
                 var cmpArchive = new Archive(args[1]);
                 var uncmpArchive = new Archive(args[2]);
@@ -21,6 +23,8 @@ namespace startrek25_rtools
                 writer.Save(args[3]);
                 break;
             }
+
+            // Decompress a file
             case "--compressfile": {
                 byte[] data = File.ReadAllBytes(args[1]);
                 byte[] cmpData = LZSS.Encode(data);
@@ -31,6 +35,8 @@ namespace startrek25_rtools
                 output.Close();
                 break;
             }
+
+            // Decompress a given file
             case "--decompressfile": {
                 FileStream stream = File.OpenRead(args[1]);
                 byte[] cmpData = new byte[stream.Length-2];
@@ -43,18 +49,24 @@ namespace startrek25_rtools
                 output.Close();
                 break;
             }
+
+            // Dump uncompressed versions of all files
             case "--dumpallfiles": {
                 var archive = new Archive(args[1]);
                 var fileMgr = new PackedFileReader(archive);
                 DumpAllFiles(fileMgr, args[2]);
                 break;
             }
+
+            // Dump compressed versions of all files
             case "--dumpallfilescmp": {
                 var archive = new Archive(args[1]);
                 var fileMgr = new PackedFileReader(archive);
                 DumpAllCompressedFiles(fileMgr, args[2]);
                 break;
             }
+
+            // Dump "scripts" (x86 code) from RDF files into txt files (uses objdump to disassemble)
             case "--dumpscripts": {
                 var archive = new Archive(args[1]);
                 var fileMgr = new PackedFileReader(archive);
