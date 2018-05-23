@@ -66,60 +66,56 @@ namespace startrek25_rtools
                 break;
             }
 
+            // Dump text from an RDF file
+            case "--dumprdftext": {
+                byte[] data = File.ReadAllBytes(args[1]);
+                int textPos = Int32.Parse(args[2]);
+                Console.Write("\"");
+                while (data[textPos] != '\0')  {
+                    char c = (char)(data[textPos++]);
+                    if (c == '\\' || c == '"')
+                        Console.Write("\\");
+                    Console.Write(c);
+                }
+                Console.Write("\",\n");
+                break;
+            }
+
+            // Dump table of text from an RDF file
+            case "--dumprdftexttable": {
+                byte[] data = File.ReadAllBytes(args[1]);
+                int pos = Int32.Parse(args[2]);
+                Console.WriteLine("const char *text[] = {");
+                while (Helper.ReadUInt16(data, pos) != 0) {
+                    int textPos = Helper.ReadUInt16(data, pos);
+                    Console.Write("\t\"");
+                    while (data[textPos] != '\0')  {
+                        char c = (char)(data[textPos++]);
+                        if (c == '\\' || c == '"')
+                            Console.Write("\\");
+                        Console.Write(c);
+                    }
+                    Console.Write("\",\n");
+                    pos += 2;
+                }
+                Console.WriteLine("\t\"\"\n};");
+                break;
+            }
+
+            case "--dumpscript": {
+                var archive = new Archive(args[1]);
+                var fileMgr = new PackedFileReader(archive);
+                DumpScript(fileMgr, args[2] + ".RDF");
+                break;
+            }
+
             // Dump "scripts" (x86 code) from RDF files into txt files (uses objdump to disassemble)
             case "--dumpscripts": {
                 var archive = new Archive(args[1]);
                 var fileMgr = new PackedFileReader(archive);
                 foreach (String s in fileMgr.GetFileList()) {
                     if (s.EndsWith(".RDF")) {
-                        String roomName = s.Substring(0, s.IndexOf('.'));
-
-                        byte[] data = fileMgr.GetFileData(s);
-                        int startOffset = Helper.ReadUInt16(data, 14);
-                        int endOffset = Helper.ReadUInt16(data, 16);
-
-                        // Dump RDF file
-                        FileStream stream = System.IO.File.Create("scripts/" + roomName + ".RDF");
-                        stream.Write(data, 0, data.Length);
-                        stream.Close();
-
-                        String outFile = "scripts/" + roomName + ".txt";
-                        File.Delete(outFile);
-
-                        // Dump each script into the txt file
-                        int offset = startOffset;
-                        while (offset < endOffset) {
-                            UInt32 index = Helper.ReadUInt32(data, offset);
-                            int nextOffset = Helper.ReadUInt16(data, offset+4);
-
-                            String infoString;
-
-                            // When the last "code index" is passed, there's no indication of it,
-                            // so I need to check for invalid values
-                            if (nextOffset > endOffset || nextOffset <= offset+6) {
-                                infoString =
-                                    "\n\n=====================\n" +
-                                    "Helper code\n" +
-                                    "=====================\n";
-                                nextOffset = endOffset;
-                            }
-                            else {
-                                offset+=6;
-                                infoString =
-                                    "\n\n=====================\n" +
-                                    "Index: " + index.ToString("X8") + "\n" +
-                                    "=====================\n";
-                            }
-                            Helper.RunBashCommand("echo '" + infoString + "' >> " + outFile); 
-
-                            String command = "objdump -b binary -mi386 -Maddr16,data16,intel -D --start-address=" + (offset) + " --stop-address=" + nextOffset;
-                            command += " scripts/" + s + ">> " + outFile;
-                            Helper.RunBashCommand(command);
-
-                            offset = nextOffset;
-                        }
-
-                        stream.Close();
+                        DumpScript(fileMgr, s);
                     }
                 }
                 break;
@@ -130,6 +126,126 @@ namespace startrek25_rtools
             }
 
             return 0;
+        }
+
+        static void DumpScript(PackedFileReader fileMgr, String s) {
+            String roomName = s.Substring(0, s.IndexOf('.'));
+
+            byte[] data = fileMgr.GetFileData(s);
+            int startOffset = Helper.ReadUInt16(data, 14);
+            int endOffset = Helper.ReadUInt16(data, 16);
+
+            // Dump RDF file
+            FileStream stream = System.IO.File.Create("scripts/" + roomName + ".RDF");
+            stream.Write(data, 0, data.Length);
+            stream.Close();
+
+            String outFile = "scripts/" + roomName + ".txt";
+            File.Delete(outFile);
+
+            // Dump each script into the txt file
+            int offset = startOffset;
+            while (offset < endOffset) {
+                UInt32 index = Helper.ReadUInt32(data, offset);
+                int nextOffset = Helper.ReadUInt16(data, offset+4);
+
+                String infoString;
+
+                // When the last "code index" is passed, there's no indication of it,
+                // so I need to check for invalid values
+                if (nextOffset > endOffset || nextOffset <= offset+6) {
+                    infoString =
+                        "\n\n=====================\n" +
+                        "Helper code\n" +
+                        "=====================\n";
+                    nextOffset = endOffset;
+                }
+                else {
+                    infoString =
+                        "\n\n=====================\n" +
+                        "Event: " + EventToString(index, offset) + "\n" +
+                        "=====================\n";
+                    offset+=6;
+                }
+                Helper.RunBashCommand("echo '" + infoString + "' >> " + outFile); 
+
+                String command = "objdump -b binary -mi386 -Maddr16,data16,intel -D --start-address=" + (offset) + " --stop-address=" + nextOffset;
+                command += " scripts/" + s + ">> " + outFile;
+                Helper.RunBashCommand(command);
+
+                offset = nextOffset;
+            }
+
+            stream.Close();
+        }
+
+        static String EventToString(UInt32 index, int offset) {
+            String[] actions = {
+                "Tick",
+                "Walk",
+                "Use",
+                "Get",
+                "Look",
+                "Talk"
+            };
+
+            var action = (Byte)(index >> 0);
+            var b1 = (Byte)(index >> 8);
+            var b2 = (Byte)(index >> 16);
+            var b3 = (Byte)(index >> 24);
+
+            String retString;
+            switch (action) {
+            case 0:
+                retString = "Tick " + (b1 | (b2 << 8));
+                break;
+            case 2: // USE
+                retString = actions[action] + " " + ItemToString(b1) + ", " + ItemToString(b2);
+                break;
+            case 1:
+            case 3:
+            case 4:
+            case 5:
+                retString = actions[action] + " " + ItemToString(b1);
+                break;
+            case 6:
+                retString = "Touched warp " + b1;
+                break;
+            case 7:
+                retString = "Touched hotspot " + b1;
+                break;
+            case 10:
+                retString = "Beamed in (" + b1 + ")";
+                break;
+            case 12:
+                retString = "Entered room (" + b1 + ")";
+                break;
+            default:
+                retString = "";
+                break;
+            }
+
+            string rawString = action.ToString("X2") + " " + b1.ToString("X2") + " " + b2.ToString("X2") + " " + b3.ToString("X2");
+            if (retString.Length == 0)
+                retString = rawString;
+            else
+                retString += " (" + rawString + ")";
+
+            return retString + " (offset in RDF: 0x" + offset.ToString("X4") + ")";
+        }
+
+        static String ItemToString(Byte index) {
+            if (index == 0)
+                return "KIRK";
+            else if (index == 1)
+                return "SPOCK";
+            else if (index == 2)
+                return "MCCOY";
+            else if (index == 3)
+                return "REDSHIRT";
+            else if (index >= 0x40 && (index - 0x40) < ItemNames.Length)
+                return ItemNames[index - 0x40];
+            return "0x"+index.ToString("X2"); // TODO
         }
 
         static void DumpAllFiles(PackedFileReader fileMgr, string directory) {
@@ -157,5 +273,81 @@ namespace startrek25_rtools
             s.Write(data, 0, data.Length);
             s.Close();
         }
+
+        static string[] ItemNames = {
+            "IPHASERS",
+            "IPHASERK",
+            "IHAND",
+            "IROCK",
+            "ISTRICOR",
+            "IMTRICOR",
+            "IDEADGUY",
+            "ICOMM",
+            "IPBC",
+            "IRLG",
+            "IWRENCH",
+            "IINSULAT",
+            "ISAMPLE",
+            "ICURE",
+            "IDISHES",
+            "IRT",
+            "IRTWB",
+            "ICOMBBIT",
+            "IJNKMETL",
+            "IWIRING",
+            "IWIRSCRP",
+            "IPWF",
+            "IPWE",
+            "IDEADPH",
+            "IBOMB",
+            "IMETAL",
+            "ISKULL",
+            "IMINERAL",
+            "IMETEOR",
+            "ISHELLS",
+            "IDEGRIME",
+            "ILENSES",
+            "IDISKS",
+            "IANTIGRA",
+            "IN2GAS",
+            "IO2GAS",
+            "IH2GAS",
+            "IN2O",
+            "INH3",
+            "IH2O",
+            "IWROD",
+            "IIROD",
+            "IREDGEM_A",
+            "IREDGEM_B",
+            "IREDGEM_C",
+            "IGRNGEM_A",
+            "IGRNGEM_B",
+            "IGRNGEM_C",
+            "IBLUGEM_A",
+            "IBLUGEM_B",
+            "IBLUGEM_C",
+            "ICONECT",
+            "IS8ROCKS",
+            "IIDCARD",
+            "ISNAKE",
+            "IFERN",
+            "ICRYSTAL",
+            "IKNIFE",
+            "IDETOXIN",
+            "IBERRY",
+            "IDOOVER",
+            "IALIENDV",
+            "ICAPSULE",
+            "IMEDKIT",
+            "IBEAM",
+            "IDRILL",
+            "IHYPO",
+            "IFUSION",
+            "ICABLE1",
+            "ICABLE2",
+            "ILMD",
+            "IDECK",
+            "ITECH"
+        };
     }
 }
