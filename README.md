@@ -22,14 +22,14 @@ Star Trek: 25th Anniversary looks for a "patches" folder from which to load any 
 So, files don't need to be repackaged into the original binary blob. However, files in
 this folder must be compressed.
 
-There is a makefile in the "staging" directory. Set the "EXE" variable to the location of
-the executable, and set "PATCH\_DIR" to the location of the patch directory (a directory
-called "patches" in the game data folder (the folder with DATA.DIR)).
+There is a makefile in the "staging" directory. In it, set the "EXE" variable to the
+location of the executable. Then, creates a folder named "patches" in the game data folder
+(the folder with DATA.DIR) and set "PATCH\_DIR" to the location of that folder.
 
-Then, create a "files" directory which contains the uncompressed versions of the files to
-be compressed. Run "make", and all files from there will be compressed to the patch
-directory. Now, you can run Star Trek, and the files in the "patches" directory will
-replace the files in the original binary blobs.
+Then, in the staging folder, create a folder named "files" which contains the uncompressed
+versions of the files to be compressed. Run "make", and all files from there will be
+compressed to the patch directory. Now, you can run Star Trek, and the files in the
+"patches" directory will replace the files in the original binary blobs.
 
 *WARNING*: The memory usage of the recompression is unreasonably high in some cases. The
 larger files can use about 1.5G to be compressed. You probably shouldn't run make with
@@ -45,19 +45,19 @@ files. Just use the "patches" directory instead...
 
 * `--compressfile <infile> <outfile>`
 
-Compress a file to be used in the "patches" directory.
+Compresses a file to be used in the "patches" directory.
 
 * `--decompressfile <infile> <outfile>`
 
-Decompress a file from the "patches" directory.
+Decompresses a file from the "patches" directory.
 
 * `--dumpallfiles <trek_dir> <output_dir>`
 
-Decompress all files from DATA.001/DATA.RUN/DATA.DIR into the given folder.
+Decompresses all files from DATA.001/DATA.RUN/DATA.DIR into the given folder.
 
 * `--dumpallfilescmp <trek_dir> <output_dir>`
 
-Dump the compressed versions of all files from DATA.001/DATA.RUN/DATA.DIR into the given
+Dumps the compressed versions of all files from DATA.001/DATA.RUN/DATA.DIR into the given
 folder.
 
 * `--dumprdftexttable <rdf_file> <address>`
