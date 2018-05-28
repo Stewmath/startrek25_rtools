@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Diagnostics;
 using System.IO;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace startrek25_rtools
 {
@@ -105,17 +107,21 @@ namespace startrek25_rtools
             case "--dumpscript": {
                 var archive = new Archive(args[1]);
                 var fileMgr = new PackedFileReader(archive);
-                DumpScript(fileMgr, args[2] + ".RDF");
+                if (args.Length >= 4)
+                    DumpScript(fileMgr, args[2] + ".RDF", args[3]);
+                else
+                    DumpScript(fileMgr, args[2] + ".RDF", null);
                 break;
             }
 
             // Dump "scripts" (x86 code) from RDF files into txt files (uses objdump to disassemble)
-            case "--dumpscripts": {
+            case "--dumpallscripts": {
                 var archive = new Archive(args[1]);
                 var fileMgr = new PackedFileReader(archive);
+                string sfxDir = (args.Length >= 3 ? args[2] : null);
                 foreach (String s in fileMgr.GetFileList()) {
                     if (s.EndsWith(".RDF")) {
-                        DumpScript(fileMgr, s);
+                        DumpScript(fileMgr, s, sfxDir);
                     }
                 }
                 break;
@@ -128,10 +134,10 @@ namespace startrek25_rtools
             return 0;
         }
 
-        static void DumpScript(PackedFileReader fileMgr, String s) {
-            String roomName = s.Substring(0, s.IndexOf('.'));
+        static void DumpScript(PackedFileReader fileMgr, String filename, String sfxDir) {
+            String roomName = filename.Substring(0, filename.IndexOf('.'));
 
-            byte[] data = fileMgr.GetFileData(s);
+            byte[] data = fileMgr.GetFileData(filename);
             int startOffset = Helper.ReadUInt16(data, 14);
             int endOffset = Helper.ReadUInt16(data, 16);
 
@@ -143,8 +149,75 @@ namespace startrek25_rtools
             String outFile = "scripts/" + roomName + ".txt";
             File.Delete(outFile);
 
+            var stringList = new List<StringEntry>();
+            IEnumerable<String> sfxList = new List<String>();
+            if (sfxDir != null) {
+                sfxList = Directory.GetFiles(sfxDir).Select(x => {
+                        x = x.Replace(".voc", "");
+                        x = x.Replace(".VOC", "");
+                        int pos = x.LastIndexOf('/');
+                        if (pos == -1)
+                            return x;
+                        return x.Substring(pos+1);
+                    });
+            }
+
+            // First pass: search for strings
+            int offset = 0;
+            while (offset < data.Length) {
+                int so = offset;
+                if (((char)(data[offset])) == '#') { // Search for audio markers
+                    offset++;
+                    int backslashes=0;
+                    while (offset < data.Length && ((char)data[offset]) != '#' && data[offset] != '\0') {
+                        if (data[offset] == '\\')
+                            backslashes++;
+                        offset++;
+                    }
+                    if (offset == data.Length || data[offset] != '#' || backslashes != 1)
+                        continue;
+                    string s = Helper.GetStringFromBuf(data, so);
+                    string id = "";
+                    for (offset=so+1; offset<data.Length && data[offset] != '#'; offset++) {
+                        id += (char)data[offset];
+                    }
+                    stringList.Add(new StringEntry(so, so + s.Length + 1, s, id));
+                    offset = so + s.Length;
+                }
+                else { // Search for known filenames
+                    string s = Helper.GetStringFromBuf(data, offset);
+                    foreach (string f in sfxList) {
+                        if (String.Equals(s, f, StringComparison.OrdinalIgnoreCase)) {
+                            offset += f.Length;
+                            stringList.Add(new StringEntry(so, offset+1, s, ""));
+                            break;
+                        }
+                    }
+                }
+                offset++;
+            }
+
+            // Print out the strings to be copied into an enum
+            Console.WriteLine("enum Strings {");
+            foreach (StringEntry e in stringList) {
+                if (e.identifier.Length == 0)
+                    continue;
+                Console.WriteLine("TX_" + e.identifier + ",");
+            }
+            Console.WriteLine("}");
+
+            // Print out the actual definitions of the strings
+            Console.WriteLine("\nString contents:");
+            foreach (StringEntry e in stringList) {
+                if (e.identifier.Length == 0)
+                    continue;
+                Console.Write(e.start.ToString("X4") + ": ");
+                Console.WriteLine("\"" + e.str.Replace("\\", "\\\\").Replace("\"", "\\\"") + "\",");
+            }
+
             // Dump each script into the txt file
-            int offset = startOffset;
+            offset = startOffset;
+            int slIndex = 0;
             while (offset < endOffset) {
                 UInt32 index = Helper.ReadUInt32(data, offset);
                 int nextOffset = Helper.ReadUInt16(data, offset+4);
@@ -167,11 +240,29 @@ namespace startrek25_rtools
                         "=====================\n";
                     offset+=6;
                 }
-                Helper.RunBashCommand("echo '" + infoString + "' >> " + outFile); 
 
-                String command = "objdump -b binary -mi386 -Maddr16,data16,intel -D --start-address=" + (offset) + " --stop-address=" + nextOffset;
-                command += " scripts/" + s + ">> " + outFile;
-                Helper.RunBashCommand(command);
+                Helper.RunBashCommand("echo '" + infoString + "' >> " + outFile); 
+                while (slIndex < stringList.Count && stringList[slIndex].end <= offset) {
+                    slIndex++;
+                }
+
+                while (offset < nextOffset) {
+                    if (slIndex < stringList.Count && stringList[slIndex].start == offset) {
+                        StringEntry ent = stringList[slIndex];
+                        Helper.AppendToFile(outFile, "\nString (0x" + ent.start.ToString("X4") + "): '" + ent.str + "'");
+                        offset = ent.end;
+                        slIndex++;
+                    }
+                    else if (slIndex < stringList.Count && stringList[slIndex].start < nextOffset) {
+                        int end = stringList[slIndex].start;
+                        Helper.Objdump("scripts/" + filename, outFile, offset, end);
+                        offset = end;
+                    }
+                    else {
+                        Helper.Objdump("scripts/" + filename, outFile, offset, nextOffset);
+                        break;
+                    }
+                }
 
                 offset = nextOffset;
             }
@@ -214,11 +305,14 @@ namespace startrek25_rtools
             case 7:
                 retString = "Touched hotspot " + b1;
                 break;
+            case 8:
+                retString = "Timer " + b1 + " expired";
+                break;
             case 10:
-                retString = "Beamed in (" + b1 + ")";
+                retString = "Finished animation (" + b1 + ")";
                 break;
             case 12:
-                retString = "Entered room (" + b1 + ")";
+                retString = "Finished walking (" + b1 + ")";
                 break;
             default:
                 retString = "";
@@ -349,5 +443,21 @@ namespace startrek25_rtools
             "IDECK",
             "ITECH"
         };
+    }
+
+    class StringEntry {
+        public int start, end;
+        public string str;
+        public string identifier;
+        public StringEntry(int start, int end, string s, string id) {
+            this.start = start;
+            this.end = end;
+            this.str = s;
+            this.identifier = id;
+
+            int pos = identifier.IndexOf('\\');
+            if (pos != -1)
+                identifier = identifier.Substring(pos+1);
+        }
     }
 }

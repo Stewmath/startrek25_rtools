@@ -1,0 +1,82 @@
+# Run this on one of the dumped ".txt" files to substitute some known variables and
+# function calls.
+
+#!/bin/bash
+file=$1
+
+if [[ $# < 1 ]]; then
+    echo "Please enter file."
+    exit 1
+fi
+
+replaceName() {
+    perl -0777 -i.original -pe "s/push   $1\\n.*call   DWORD PTR cs:0x0/call   $2 (cmd $1)/g" $file
+}
+
+replaceVar() {
+    sed -i "s/\[si+$1\\>.*\]/\[si+$1 ($2)\]/" $file
+}
+
+replaceName 0x0 loadActorAnim
+replaceName 0x1 loadActorStandAnim
+replaceName 0x2 loadActorAnim2
+replaceName 0x3 showRoomSpecificText
+replaceName 0x4 giveItem
+#replaceName 0x5 ?
+replaceName 0x6 loadRoomIndex
+#replaceName 0x7 ?
+replaceName 0x8 walkCrewman
+replaceName 0x9 loadMapFile
+#replaceName 0xa ?
+#replaceName 0xb ?
+#replaceName 0xc ?
+#replaceName 0xd ?
+#replaceName 0xe ?
+replaceName 0xf playSoundEffectIndex
+replaceName 0x10 playMidiMusicTracks
+#replaceName 0x11 ?
+#replaceName 0x12 ?
+#replaceName 0x13 ?
+#replaceName 0x14 ?
+replaceName 0x15 playVoc
+
+
+# AwayMissionStruct vars
+replaceVar 0x0 timer0
+replaceVar 0x2 timer1
+replaceVar 0x4 timer2
+replaceVar 0x6 timer3
+replaceVar 0x8 timer4
+replaceVar 0xa timer5
+replaceVar 0xc timer6
+replaceVar 0xe timer7
+replaceVar 0x10 mouseX
+replaceVar 0x12 mouseX
+replaceVar 0x1c disableWalking
+replaceVar 0x1d transitioningIntoRoom
+replaceVar 0x1e redshirtDead
+replaceVar 0x1f activeAction
+replaceVar 0x20 activeObject
+replaceVar 0x21 passiveObject
+replaceVar 0x25 kirkDirection
+replaceVar 0x26 spockDirection
+replaceVar 0x27 mccoyDirection
+replaceVar 0x28 redshirtDirection
+replaceVar 0x23 rdfStillDoDefaultAction
+replaceVar 0x58 missionScore
+
+# Specific to Demon World
+replaceVar 0x2f beatKlingons
+replaceVar 0x39 numBouldersGone
+replaceVar 0x3a enteredFrom
+replaceVar 0x3c healedMiner
+replaceVar 0x40 minerDead
+replaceVar 0x48 warpsDisabled
+replaceVar 0x49 boulder1Gone
+replaceVar 0x4a boulder2Gone
+replaceVar 0x4b boulder3Gone
+replaceVar 0x4c boulder4Gone
+replaceVar 0x4d doorOpened
+replaceVar 0x50 gotBerries
+replaceVar 0x51 madeHypoDyoxin
+replaceVar 0x57 foundAlienRoom

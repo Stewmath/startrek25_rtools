@@ -68,16 +68,19 @@ Dumps a table of text from an address in an RDF file to stdout.
 
 Dumps a string from an address in an RDF file to stdout.
 
-* `--dumpscript <trek_dir> <room_name>`
+* `--dumpscript <trek_dir> <room_name> <sfx_dir>`
 
 Dumps x86 code from an RDF file to a txt file using objdump. Code is sorted by the actions
 that call them (ie. look at, talk to). Assumes that a "scripts/" directory exists.
 
+"sfx\_dir" should be the location of the "voc/sfx" directory that comes from the CD. It reads
+the filenames to help detect strings and separate them from code.
+
 `room_name` should not have the rdf extension, ie:
 
-`startrek25_rtools.exe --dumpscript TREKCD DEMON0`
+`startrek25_rtools.exe --dumpscript TREKCD DEMON0 voc/sfx/`
 
-* `--dumpallscripts <trek_dir>`
+* `--dumpallscripts <trek_dir> <sfx_dir>`
 
 Same as running `--dumpscript` on all RDF files. Assumes there's a "scripts/" directory to
 dump them to.
