@@ -197,24 +197,6 @@ namespace startrek25_rtools
                 offset++;
             }
 
-            // Print out the strings to be copied into an enum
-            Console.WriteLine("enum Strings {");
-            foreach (StringEntry e in stringList) {
-                if (e.identifier.Length == 0)
-                    continue;
-                Console.WriteLine("TX_" + e.identifier + ",");
-            }
-            Console.WriteLine("}");
-
-            // Print out the actual definitions of the strings
-            Console.WriteLine("\nString contents:");
-            foreach (StringEntry e in stringList) {
-                if (e.identifier.Length == 0)
-                    continue;
-                Console.Write(e.start.ToString("X4") + ": ");
-                Console.WriteLine("\"" + e.str.Replace("\\", "\\\\").Replace("\"", "\\\"") + "\",");
-            }
-
             // Dump each script into the txt file
             offset = startOffset;
             int slIndex = 0;
@@ -268,6 +250,36 @@ namespace startrek25_rtools
             }
 
             stream.Close();
+
+            // Print unsorted string list (must be done after objdump calls)
+            Console.WriteLine("\n====================\nUnsorted strings:\n====================");
+            foreach (StringEntry e in stringList) {
+                if (e.identifier.Length == 0)
+                    continue;
+                Console.Write(e.start.ToString("X4") + ": ");
+                Console.WriteLine("\"" + e.str.Replace("\\", "\\\\").Replace("\"", "\\\"") + "\",");
+            }
+
+            // Print sorted string list (must be done after objdump calls)
+            stringList.Sort();
+
+            Console.WriteLine("\n====================\nSorted strings:\n====================");
+            foreach (StringEntry e in stringList) {
+                if (e.identifier.Length == 0)
+                    continue;
+                Console.WriteLine("\"" + e.str.Replace("\\", "\\\\").Replace("\"", "\\\"") + "\",");
+            }
+
+            // Print out the strings to be copied into an enum
+            Console.WriteLine("\n====================\nEnum:\n====================");
+            Console.WriteLine("\nenum Strings {");
+            foreach (StringEntry e in stringList) {
+                if (e.identifier.Length == 0)
+                    continue;
+                Console.WriteLine("TX_" + e.identifier + ",");
+            }
+            Console.WriteLine("}");
+
         }
 
         static String EventToString(UInt32 index, int offset) {
@@ -445,7 +457,7 @@ namespace startrek25_rtools
         };
     }
 
-    class StringEntry {
+    class StringEntry : IComparable {
         public int start, end;
         public string str;
         public string identifier;
@@ -458,6 +470,11 @@ namespace startrek25_rtools
             int pos = identifier.IndexOf('\\');
             if (pos != -1)
                 identifier = identifier.Substring(pos+1);
+        }
+
+        public int CompareTo(Object o) {
+            StringEntry e = (StringEntry)o;
+            return identifier.CompareTo(e.identifier);
         }
     }
 }
