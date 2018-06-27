@@ -198,17 +198,23 @@ namespace startrek25_rtools
             }
 
             // Dump each script into the txt file
+            HashSet<UInt32> seenEvents = new HashSet<UInt32>();
             offset = startOffset;
             int slIndex = 0;
             while (offset < endOffset) {
                 UInt32 index = Helper.ReadUInt32(data, offset);
                 int nextOffset = Helper.ReadUInt16(data, offset+4);
 
+                if (seenEvents.Contains(index)) {
+                    Console.WriteLine("WARNING: Event duplicated: \"" + EventToString(index, offset) + "\"");
+                }
+                seenEvents.Add(index);
+
                 String infoString;
 
                 // When the last "code index" is passed, there's no indication of it,
                 // so I need to check for invalid values
-                if (nextOffset > endOffset || nextOffset <= offset+6) {
+                if (nextOffset > endOffset || nextOffset < offset+6) {
                     infoString =
                         "\n\n=====================\n" +
                         "Helper code\n" +

@@ -4,6 +4,8 @@ using System.IO;
 using System.Linq;
 
 public class LZSS {
+    public static string processingFile;
+
     public static byte[] Decode(Stream indata, int compressedSize, int uncompressedSize) {
         byte[] buf = new byte[compressedSize];
         indata.Read(buf, 0, compressedSize);
@@ -51,8 +53,10 @@ public class LZSS {
             }
         }
 
-        if (uncompressedSize != 0 && outLzssBufData.Count != uncompressedSize)
+        if (uncompressedSize != 0 && outLzssBufData.Count != uncompressedSize) {
             Console.WriteLine("Size mismatch: expected " + uncompressedSize + ", got " + outLzssBufData.Count);
+            Console.WriteLine("Warning while processing \"" + processingFile + "\"");
+        }
 
         return outLzssBufData.ToArray();
     }

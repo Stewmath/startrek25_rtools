@@ -80,6 +80,7 @@ class PackedFileReader {
      * Get the uncompressed data of a file.
      */
     public byte[] GetFileData(string filename, int part=0) {
+        LZSS.processingFile = filename;
         /*
         if (part == 0)
             Console.WriteLine(filename);
