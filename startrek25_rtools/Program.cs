@@ -337,6 +337,13 @@ namespace startrek25_rtools
                 break;
             }
 
+            // Check for actions using bytes they're not expected to use
+            if (b3 != 0)
+                Console.WriteLine("WARNING: b3 nonzero in action: " + retString);
+            if (b2 != 0 && action != 0 && action != 2)
+                Console.WriteLine("WARNING: b2 nonzero in action: " + retString);
+
+
             string rawString = action.ToString("X2") + " " + b1.ToString("X2") + " " + b2.ToString("X2") + " " + b3.ToString("X2");
             if (retString.Length == 0)
                 retString = rawString;
