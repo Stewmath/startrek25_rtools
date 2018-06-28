@@ -68,7 +68,7 @@ Dumps a table of text from an address in an RDF file to stdout.
 
 Dumps a string from an address in an RDF file to stdout.
 
-* `--dumpscript <trek_dir> <room_name> <sfx_dir>`
+* `--dumpscript <rdf_file> [<sfx_dir>]`
 
 Dumps x86 code from an RDF file to a txt file using objdump. Code is sorted by the actions
 that call them (ie. look at, talk to). Assumes that a "scripts/" directory exists.
@@ -78,9 +78,9 @@ the filenames to help detect strings and separate them from code.
 
 `room_name` should not have the rdf extension, ie:
 
-`startrek25_rtools.exe --dumpscript TREKCD DEMON0 voc/sfx/`
+`startrek25_rtools.exe --dumpscript DEMON0.RDF voc/sfx/`
 
-* `--dumpallscripts <trek_dir> <sfx_dir>`
+* `--dumpallscripts <input_dir> <output_dir> [<sfx_dir>]
 
-Same as running `--dumpscript` on all RDF files. Assumes there's a "scripts/" directory to
-dump them to.
+Same as running `--dumpscript` on all RDF files in input_dir, and all output files go to
+"output_dir".

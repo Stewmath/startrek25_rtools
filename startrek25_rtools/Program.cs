@@ -105,23 +105,21 @@ namespace startrek25_rtools
             }
 
             case "--dumpscript": {
-                var archive = new Archive(args[1]);
-                var fileMgr = new PackedFileReader(archive);
-                if (args.Length >= 4)
-                    DumpScript(fileMgr, args[2] + ".RDF", args[3]);
+                if (args.Length >= 3)
+                    DumpScript(args[1], args[2]);
                 else
-                    DumpScript(fileMgr, args[2] + ".RDF", null);
+                    DumpScript(args[1], null);
                 break;
             }
 
             // Dump "scripts" (x86 code) from RDF files into txt files (uses objdump to disassemble)
             case "--dumpallscripts": {
-                var archive = new Archive(args[1]);
-                var fileMgr = new PackedFileReader(archive);
+                var directory = args[1];
+                var outputDir = args[2];
                 string sfxDir = (args.Length >= 3 ? args[2] : null);
-                foreach (String s in fileMgr.GetFileList()) {
+                foreach (String s in Directory.GetFiles(directory)) {
                     if (s.EndsWith(".RDF")) {
-                        DumpScript(fileMgr, s, sfxDir);
+                        DumpScript(s, sfxDir, outputDir);
                     }
                 }
                 break;
@@ -134,19 +132,20 @@ namespace startrek25_rtools
             return 0;
         }
 
-        static void DumpScript(PackedFileReader fileMgr, String filename, String sfxDir) {
+        static void DumpScript(String filename, String sfxDir, String outputDir = "scripts") {
             String roomName = filename.Substring(0, filename.IndexOf('.'));
+            roomName = roomName.Substring(roomName.LastIndexOf('/'));
 
-            byte[] data = fileMgr.GetFileData(filename);
+            byte[] data = File.ReadAllBytes(filename);
             int startOffset = Helper.ReadUInt16(data, 14);
             int endOffset = Helper.ReadUInt16(data, 16);
 
             // Dump RDF file
-            FileStream stream = System.IO.File.Create("scripts/" + roomName + ".RDF");
+            FileStream stream = System.IO.File.Create(outputDir + "/" + roomName + ".RDF");
             stream.Write(data, 0, data.Length);
             stream.Close();
 
-            String outFile = "scripts/" + roomName + ".txt";
+            String outFile = outputDir + "/" + roomName + ".txt";
             File.Delete(outFile);
 
             var stringList = new List<StringEntry>();
@@ -243,11 +242,11 @@ namespace startrek25_rtools
                     }
                     else if (slIndex < stringList.Count && stringList[slIndex].start < nextOffset) {
                         int end = stringList[slIndex].start;
-                        Helper.Objdump("scripts/" + filename, outFile, offset, end);
+                        Helper.Objdump(filename, outFile, offset, end);
                         offset = end;
                     }
                     else {
-                        Helper.Objdump("scripts/" + filename, outFile, offset, nextOffset);
+                        Helper.Objdump(filename, outFile, offset, nextOffset);
                         break;
                     }
                 }
