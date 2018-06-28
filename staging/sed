@@ -28,10 +28,10 @@ replaceName 0x7 loseItem
 replaceName 0x8 walkCrewman
 replaceName 0x9 loadMapFile
 #replaceName 0xa ?
-#replaceName 0xb ?
+replaceName 0xb haveItem
 replaceName 0xc demon6ShowCase
 replaceName 0xd getActorPos
-#replaceName 0xe ?
+replaceName 0xe getRandomWordInRange
 replaceName 0xf playSoundEffectIndex
 replaceName 0x10 playMidiMusicTracks
 replaceName 0x11 endMission
@@ -63,23 +63,30 @@ replaceVar 0x26 spockDirection
 replaceVar 0x27 mccoyDirection
 replaceVar 0x28 redshirtDirection
 replaceVar 0x23 rdfStillDoDefaultAction
-replaceVar 0x58 missionScore
+
+# Specific to Hijacked
+#replaceVar 0x29 missionScore
+#replaceVar 0x49 haveBomb
+#replaceVar 0x4c guard1Status
+#replaceVar 0x4d guard2Status
+#replaceVar 0x58 field58
 
 # Specific to Demon World
-replaceVar 0x2f beatKlingons
-replaceVar 0x39 numBouldersGone
-replaceVar 0x3a enteredFrom
-replaceVar 0x3c healedMiner
-replaceVar 0x3d curedChub
-replaceVar 0x3f knowAboutHypoDytoxin
-replaceVar 0x40 minerDead
-replaceVar 0x48 warpsDisabled
-replaceVar 0x49 boulder1Gone
-replaceVar 0x4a boulder2Gone
-replaceVar 0x4b boulder3Gone
-replaceVar 0x4c boulder4Gone
-replaceVar 0x4d doorOpened
-replaceVar 0x4e solvedSunPuzzle
-replaceVar 0x50 gotBerries
-replaceVar 0x51 madeHypoDyoxin
-replaceVar 0x57 foundAlienRoom
+#replaceVar 0x2f beatKlingons
+#replaceVar 0x39 numBouldersGone
+#replaceVar 0x3a enteredFrom
+#replaceVar 0x3c healedMiner
+#replaceVar 0x3d curedChub
+#replaceVar 0x3f knowAboutHypoDytoxin
+#replaceVar 0x40 minerDead
+#replaceVar 0x48 warpsDisabled
+#replaceVar 0x49 boulder1Gone
+#replaceVar 0x4a boulder2Gone
+#replaceVar 0x4b boulder3Gone
+#replaceVar 0x4c boulder4Gone
+#replaceVar 0x4d doorOpened
+#replaceVar 0x4e solvedSunPuzzle
+#replaceVar 0x50 gotBerries
+#replaceVar 0x51 madeHypoDyoxin
+#replaceVar 0x57 foundAlienRoom
+#replaceVar 0x58 missionScore
