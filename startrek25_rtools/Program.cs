@@ -88,7 +88,7 @@ namespace startrek25_rtools
                 byte[] data = File.ReadAllBytes(args[1]);
                 int pos = Int32.Parse(args[2]);
                 Console.WriteLine("const char *text[] = {");
-                while (Helper.ReadUInt16(data, pos) != 0) {
+                do {
                     int textPos = Helper.ReadUInt16(data, pos);
                     Console.Write("\t\"");
                     while (data[textPos] != '\0')  {
@@ -100,6 +100,7 @@ namespace startrek25_rtools
                     Console.Write("\",\n");
                     pos += 2;
                 }
+                while (Helper.ReadUInt16(data, pos) != 0);
                 Console.WriteLine("\t\"\"\n};");
                 break;
             }
