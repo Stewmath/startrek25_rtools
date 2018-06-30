@@ -4,6 +4,9 @@ This is a program which provides some tools for dumping and modifying files in S
 The game stores its files in compressed binary blobs, so this mainly deals with extracting
 and re-compressing them.
 
+This program assumes it's running in a bash shell. objdump should be available when
+dumping scripts.
+
 ## Dumping files
 
 Assuming a unix-ish environment, run the following commands:
