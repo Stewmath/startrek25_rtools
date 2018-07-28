@@ -10,7 +10,8 @@ if [[ $# < 1 ]]; then
 fi
 
 replaceName() {
-    perl -0777 -i.original -pe "s/push   $1\\n.*call   DWORD PTR cs:0x0/call   $2 (cmd $1)/g" $file
+    perl -0777 -i -pe "s/push   $1\\n.*call   DWORD PTR cs:0x0/call   $2 (cmd $1)/g" $file
+    perl -0777 -i -pe "s/mov    ax,$1\\n.*push   ax\\n.*call   DWORD PTR cs:0x0/call   $2 (cmd $1)/g" $file
 }
 
 replaceVar() {
@@ -27,7 +28,7 @@ replaceName 0x6 loadRoomIndex
 replaceName 0x7 loseItem
 replaceName 0x8 walkCrewman
 replaceName 0x9 loadMapFile
-#replaceName 0xa ?
+replaceName 0xa showBitmapFor5Ticks
 replaceName 0xb haveItem
 replaceName 0xc demon6ShowCase
 replaceName 0xd getActorPos
@@ -36,9 +37,10 @@ replaceName 0xf playSoundEffectIndex
 replaceName 0x10 playMidiMusicTracks
 replaceName 0x11 endMission
 replaceName 0x12 showGameOverMenu
-#replaceName 0x13 ?
+replaceName 0x13 showCodeInputBox
 #replaceName 0x14 ?
 replaceName 0x15 playVoc
+replaceName 0x17 stopAllVocSounds
 
 
 # AwayMissionStruct vars
